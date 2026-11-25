@@ -1,6 +1,6 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { LearnerProvider, useLearner } from "./context/LearnerContext";
+import { LearnerProvider } from "./context/LearnerProvider";
+import { useLearner } from "./context/LearnerContext";
 import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
 import ProfileSetupPage from "./pages/ProfileSetupPage";
