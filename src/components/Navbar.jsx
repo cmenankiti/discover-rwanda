@@ -41,22 +41,33 @@ export default function Navbar() {
     }
   };
 
-  useEffect(() => {
-    return () => clearRestTimer();
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) {
-      clearRestTimer();
-      candidateIdxRef.current = null;
-      setHoveredIdx(null);
-      return;
-    }
-
-    const centerIndex = MENU_ITEMS.length * 4;
-    setActiveIdx(centerIndex);
-    setHoveredIdx(null);
+  const resetHoverState = () => {
+    clearRestTimer();
     candidateIdxRef.current = null;
+    setHoveredIdx(null);
+  };
+
+  const openMenu = () => {
+    resetHoverState();
+    setActiveIdx(MENU_ITEMS.length * 4);
+    setMenuOpen(true);
+  };
+
+  const closeMenu = () => {
+    resetHoverState();
+    setMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    if (menuOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
 
     requestAnimationFrame(() => {
       if (trackRef.current) {
@@ -165,7 +176,7 @@ export default function Navbar() {
 
   const handleLogOut = () => {
     signOut();
-    setMenuOpen(false);
+    closeMenu();
     navigate("/");
   };
 
@@ -190,7 +201,7 @@ export default function Navbar() {
             <Link
               to={learner.isAuthenticated ? "/dashboard" : "/"}
               className="brand-wordmark"
-              onClick={() => setMenuOpen(false)}
+              onClick={closeMenu}
             >
               Discover Rwanda
             </Link>
@@ -227,7 +238,7 @@ export default function Navbar() {
               className="menu-trigger"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((prev) => !prev)}
+              onClick={toggleMenu}
             >
               {menuOpen ? "✕" : "☰"}
             </button>
@@ -247,7 +258,7 @@ export default function Navbar() {
             type="button"
             className="drawer-close-btn"
             aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
             ✕
           </button>
@@ -259,13 +270,13 @@ export default function Navbar() {
                 Scroll continuously through the menu or select a section to open.
               </p>
               <div className="drawer-links-secondary">
-                <Link to="/modules/welcome" onClick={() => setMenuOpen(false)}>
+                <Link to="/modules/welcome" onClick={closeMenu}>
                   Welcome to Rwanda
                 </Link>
-                <Link to="/modules/culture" onClick={() => setMenuOpen(false)}>
+                <Link to="/modules/culture" onClick={closeMenu}>
                   Culture & Daily Life
                 </Link>
-                <Link to="/modules/history" onClick={() => setMenuOpen(false)}>
+                <Link to="/modules/history" onClick={closeMenu}>
                   History & Memory
                 </Link>
               </div>
@@ -278,7 +289,7 @@ export default function Navbar() {
                   to={currentItem.path}
                   className="drawer-open-badge"
                   style={{ top: `${badgeTop}px` }}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={closeMenu}
                 >
                   Open
                 </Link>
@@ -301,7 +312,7 @@ export default function Navbar() {
                       onMouseLeave={() => handleItemRestEnd(idx)}
                       onFocus={(e) => handleItemRestStart(idx, e)}
                       onBlur={() => handleItemRestEnd(idx)}
-                      onClick={() => setMenuOpen(false)}
+                      onClick={closeMenu}
                     >
                       {item.label}
                     </Link>

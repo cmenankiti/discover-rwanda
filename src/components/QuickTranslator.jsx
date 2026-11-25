@@ -74,57 +74,38 @@ async function fetchOnlineTranslation(text, direction, signal) {
 export default function QuickTranslator({ onSpeak, isSpeaking = false }) {
   const [direction, setDirection] = useState("rw-en");
   const [inputText, setInputText] = useState("Muraho");
-  const [result, setResult] = useState({
-    phraseId: "muraho",
-    translation: "Hello (general / formal)",
-    phonetic: "moo-RAH-ho",
-    source: "local",
-    loading: false,
-  });
+  const [remoteResult, setRemoteResult] = useState(null);
 
   const sourceLabel = direction === "rw-en" ? "Kinyarwanda" : "English";
   const targetLabel = direction === "rw-en" ? "English" : "Kinyarwanda";
 
+  const trimmed = inputText.trim();
+  const localHit = trimmed ? findLocalMatch(trimmed, direction) : null;
+  const needsOnline = Boolean(trimmed) && !localHit;
+
   useEffect(() => {
-    const trimmed = inputText.trim();
-    if (!trimmed) {
-      setResult({
+    if (!needsOnline) return;
+
+    const queryKey = `${direction}::${trimmed}`;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setRemoteResult({
+        key: queryKey,
         phraseId: null,
         translation: "",
         phonetic: "",
-        source: "empty",
-        loading: false,
-      });
-      return;
-    }
-
-    const localHit = findLocalMatch(trimmed, direction);
-    if (localHit) {
-      setResult({
-        phraseId: localHit.phraseId,
-        translation: localHit.translation,
-        phonetic: localHit.phonetic,
-        source: "local",
-        loading: false,
-      });
-      return;
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setResult((prev) => ({
-        ...prev,
-        phraseId: null,
+        source: "online",
         loading: true,
-        phonetic: "",
-      }));
+      });
+
       try {
         const onlineText = await fetchOnlineTranslation(
           trimmed,
           direction,
           controller.signal
         );
-        setResult({
+        setRemoteResult({
+          key: queryKey,
           phraseId: null,
           translation: onlineText,
           phonetic: "",
@@ -133,7 +114,8 @@ export default function QuickTranslator({ onSpeak, isSpeaking = false }) {
         });
       } catch (err) {
         if (err.name === "AbortError") return;
-        setResult({
+        setRemoteResult({
+          key: queryKey,
           phraseId: null,
           translation:
             "Couldn't reach the online translator right now. Check your connection or try a starter phrase like 'Muraho' or 'Good morning'.",
@@ -148,7 +130,35 @@ export default function QuickTranslator({ onSpeak, isSpeaking = false }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [inputText, direction]);
+  }, [needsOnline, trimmed, direction]);
+
+  const currentQueryKey = `${direction}::${trimmed}`;
+  const matchingRemote =
+    needsOnline && remoteResult?.key === currentQueryKey ? remoteResult : null;
+
+  const result = !trimmed
+    ? {
+        phraseId: null,
+        translation: "",
+        phonetic: "",
+        source: "empty",
+        loading: false,
+      }
+    : localHit
+    ? {
+        phraseId: localHit.phraseId,
+        translation: localHit.translation,
+        phonetic: localHit.phonetic,
+        source: "local",
+        loading: false,
+      }
+    : matchingRemote || {
+        phraseId: null,
+        translation: "",
+        phonetic: "",
+        source: "online",
+        loading: true,
+      };
 
   const handleSwap = () => {
     setDirection((prev) => (prev === "rw-en" ? "en-rw" : "rw-en"));
