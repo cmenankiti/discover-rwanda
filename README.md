@@ -1,16 +1,38 @@
-# React + Vite
+# Discover Rwanda
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive student orientation web application built with React and Vite to help incoming students and newcomers in Rwanda build confidence with everyday Kinyarwanda phrases, cultural etiquette, historical context, and campus scenarios.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Kinyarwanda Starter & Phrase Lookup:** Practice essential greetings and phrases with local MP3 pronunciation audio (`public/audio/`), speech synthesis fallback, and quick phrase lookup.
+- **Culture, History & Campus Scenarios:** Explore interactive orientation modules, etiquette takeaways, timeline context, and decision-based scenarios with points and badges.
+- **Local-First Learner Progress:** Sign up or log in with `localStorage`-backed profiles (`discover_rwanda_accounts_v1` and `discover_rwanda_session_v1`) to track completed modules, points, and earned badges.
+- **Responsive Dark UI:** Styled with a custom Rwandan flag-inspired palette and responsive breakpoints across desktop and mobile viewports.
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `public/audio/` — Kinyarwanda starter phrase `.mp3` files
+- `src/pages/` — Route views (`LandingPage.jsx`, `ProfileSetupPage.jsx`, `DashboardPage.jsx`, `ModuleViewPage.jsx`)
+- `src/components/` — Reusable UI components (`Navbar.jsx`, `FlagEmblem.jsx`, `ModuleCard.jsx`, `QuickTranslator.jsx`)
+- `src/context/LearnerContext.jsx` — Learner authentication and progress state
+- `src/data/orientationData.js` — Orientation modules, phrases, culture notes, and scenarios
+- `src/shared/` — Audio playback/speech utilities and phrase lookup helpers
+- `src/styles/` — Global and module stylesheets (`global.css`, `modules.css`)
 
-## Expanding the ESLint configuration
+## Notes on Persistence 
+Learner accounts, session state, and module progress are stored locally in the browser via localStorage without a remote backend, so data persists across reloads and sign-outs on the same browser and origin unless browser storage is cleared.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Getting Started 
+
+```bash
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+
+# Run linter
+npm run lint
+
+# Create a production build
+npm run build

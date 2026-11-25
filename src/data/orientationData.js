@@ -135,7 +135,8 @@ export const CULTURE_CARDS = [
     title: "Umuganda (Last Saturday Service)",
     description:
       "On the last Saturday morning of every month (8:00 AM – 11:00 AM), communities across Rwanda come together to clean streets, build infrastructure, and hold local meetings. Shops and public transit pause during this window.",
-    takeaway: "Plan errands around Saturday morning—or join your neighborhood Umuganda to meet locals!",
+    takeaway:
+      "Plan errands for the day before Saturday morning—or join your neighborhood Umuganda to meet locals!",
   },
   {
     id: "etiquette",
