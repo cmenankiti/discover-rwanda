@@ -12,6 +12,7 @@ const MENU_ITEMS = [
 ];
 
 const REPEAT_CYCLES = 12;
+const REST_DELAY_MS = 100;
 
 export default function Navbar() {
   const { learner, signOut } = useLearner();
@@ -19,9 +20,12 @@ export default function Navbar() {
   const drawerRef = useRef(null);
   const trackRef = useRef(null);
   const lastScrollTopRef = useRef(0);
+  const restTimeoutRef = useRef(null);
+  const candidateIdxRef = useRef(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(MENU_ITEMS.length * 4);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
   const [spinDeg, setSpinDeg] = useState(0);
   const [badgeTop, setBadgeTop] = useState(140);
 
@@ -30,11 +34,29 @@ export default function Navbar() {
     (_, i) => MENU_ITEMS[i % MENU_ITEMS.length]
   );
 
+  const clearRestTimer = () => {
+    if (restTimeoutRef.current !== null) {
+      window.clearTimeout(restTimeoutRef.current);
+      restTimeoutRef.current = null;
+    }
+  };
+
   useEffect(() => {
-    if (!menuOpen) return;
+    return () => clearRestTimer();
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      clearRestTimer();
+      candidateIdxRef.current = null;
+      setHoveredIdx(null);
+      return;
+    }
 
     const centerIndex = MENU_ITEMS.length * 4;
     setActiveIdx(centerIndex);
+    setHoveredIdx(null);
+    candidateIdxRef.current = null;
 
     requestAnimationFrame(() => {
       if (trackRef.current) {
@@ -46,6 +68,9 @@ export default function Navbar() {
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
+        clearRestTimer();
+        candidateIdxRef.current = null;
+        setHoveredIdx(null);
         setMenuOpen(false);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -61,6 +86,21 @@ export default function Navbar() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [menuOpen]);
+
+  const updateBadgePosition = (targetEl) => {
+    if (drawerRef.current && targetEl) {
+      const containerRect = drawerRef.current.getBoundingClientRect();
+      const itemRect = targetEl.getBoundingClientRect();
+      const clampedTop = Math.max(
+        40,
+        Math.min(
+          itemRect.top - containerRect.top + itemRect.height / 2 - 42,
+          containerRect.height - 130
+        )
+      );
+      setBadgeTop(clampedTop);
+    }
+  };
 
   const handleTrackScroll = () => {
     const el = trackRef.current;
@@ -100,21 +140,27 @@ export default function Navbar() {
     }
   };
 
-  const handleItemHover = (indexInContinuous, e) => {
+  const handleItemRestStart = (indexInContinuous, e) => {
     setActiveIdx(indexInContinuous);
     setSpinDeg((prev) => prev + 30);
-    if (drawerRef.current && e.currentTarget) {
-      const containerRect = drawerRef.current.getBoundingClientRect();
-      const itemRect = e.currentTarget.getBoundingClientRect();
-      const clampedTop = Math.max(
-        40,
-        Math.min(
-          itemRect.top - containerRect.top + itemRect.height / 2 - 42,
-          containerRect.height - 130
-        )
-      );
-      setBadgeTop(clampedTop);
+    updateBadgePosition(e.currentTarget);
+
+    candidateIdxRef.current = indexInContinuous;
+    clearRestTimer();
+
+    restTimeoutRef.current = window.setTimeout(() => {
+      if (candidateIdxRef.current === indexInContinuous) {
+        setHoveredIdx(indexInContinuous);
+      }
+    }, REST_DELAY_MS);
+  };
+
+  const handleItemRestEnd = (indexInContinuous) => {
+    if (candidateIdxRef.current === indexInContinuous) {
+      candidateIdxRef.current = null;
     }
+    clearRestTimer();
+    setHoveredIdx((prev) => (prev === indexInContinuous ? null : prev));
   };
 
   const handleLogOut = () => {
@@ -123,8 +169,12 @@ export default function Navbar() {
     navigate("/");
   };
 
+  const displayedIdx = hoveredIdx !== null ? hoveredIdx : activeIdx;
   const currentItem =
-    MENU_ITEMS[((activeIdx % MENU_ITEMS.length) + MENU_ITEMS.length) % MENU_ITEMS.length];
+    MENU_ITEMS[
+      ((displayedIdx % MENU_ITEMS.length) + MENU_ITEMS.length) %
+        MENU_ITEMS.length
+    ];
 
   return (
     <>
@@ -223,14 +273,16 @@ export default function Navbar() {
             </aside>
 
             <div className="drawer-center-track">
-              <Link
-                to={currentItem.path}
-                className="drawer-open-badge"
-                style={{ top: `${badgeTop}px` }}
-                onClick={() => setMenuOpen(false)}
-              >
-                Open
-              </Link>
+              {hoveredIdx !== null && (
+                <Link
+                  to={currentItem.path}
+                  className="drawer-open-badge"
+                  style={{ top: `${badgeTop}px` }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Open
+                </Link>
+              )}
 
               <nav
                 ref={trackRef}
@@ -239,14 +291,16 @@ export default function Navbar() {
                 onScroll={handleTrackScroll}
               >
                 {continuousList.map((item, idx) => {
-                  const isFocused = idx === activeIdx;
+                  const isFocused = idx === activeIdx || idx === hoveredIdx;
                   return (
                     <Link
                       key={`${item.path}-${idx}`}
                       to={item.path}
                       className={`drawer-item ${isFocused ? "is-active" : ""}`}
-                      onMouseEnter={(e) => handleItemHover(idx, e)}
-                      onFocus={(e) => handleItemHover(idx, e)}
+                      onMouseEnter={(e) => handleItemRestStart(idx, e)}
+                      onMouseLeave={() => handleItemRestEnd(idx)}
+                      onFocus={(e) => handleItemRestStart(idx, e)}
+                      onBlur={() => handleItemRestEnd(idx)}
                       onClick={() => setMenuOpen(false)}
                     >
                       {item.label}
@@ -259,7 +313,7 @@ export default function Navbar() {
             <div className="drawer-visual">
               <FlagEmblem
                 variant="drawer"
-                activeIndex={activeIdx}
+                activeIndex={displayedIdx}
                 tiltDeg={spinDeg}
               />
               <p className="drawer-prism-caption">/ {currentItem.note}</p>

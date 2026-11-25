@@ -26,13 +26,7 @@ function EyeIcon({ visible }) {
 }
 
 export default function ProfileSetupPage() {
-  const {
-    learner,
-    pendingAuth,
-    requestVerificationCode,
-    verifyAndCompleteAuth,
-    cancelPendingAuth,
-  } = useLearner();
+  const { learner, signUp, signIn } = useLearner();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState("login");
@@ -41,7 +35,6 @@ export default function ProfileSetupPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [goal, setGoal] = useState(GOALS[0]);
-  const [codeInput, setCodeInput] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -50,41 +43,20 @@ export default function ProfileSetupPage() {
     }
   }, [learner.isAuthenticated, navigate]);
 
-  const handleCredentialSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const res = requestVerificationCode({ mode, username, email, password, goal });
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    setCodeInput("");
-    setError("");
-  };
+    const res =
+      mode === "signup"
+        ? signUp({ username, email, password, goal })
+        : signIn({ username, email, password });
 
-  const handleVerifyCode = (e) => {
-    e.preventDefault();
-    const res = verifyAndCompleteAuth(codeInput);
     if (!res.ok) {
       setError(res.error);
       return;
     }
+
     setError("");
     navigate("/dashboard");
-  };
-
-  const handleResendCode = () => {
-    if (!pendingAuth) return;
-    const res = requestVerificationCode({
-      mode: pendingAuth.mode,
-      username: pendingAuth.username,
-      email: pendingAuth.email,
-      password: pendingAuth.password,
-      goal: pendingAuth.goal,
-    });
-    if (res.ok) {
-      setCodeInput("");
-      setError("");
-    }
   };
 
   return (
@@ -98,8 +70,8 @@ export default function ProfileSetupPage() {
             <span>Rwanda</span> with clarity.
           </h1>
           <p className="auth-desc">
-            Sign in with your account or create a new one, verify with a 6-digit
-            code, and track your orientation modules and badges.
+            Sign in with your account or create a new one to track your
+            orientation modules, points, and badges.
           </p>
 
           <div className="auth-orb-preview">
@@ -112,191 +84,123 @@ export default function ProfileSetupPage() {
         </section>
 
         <section className="auth-panel" aria-labelledby="auth-form-title">
-          {!pendingAuth ? (
-            <>
-              <div className="auth-tabs" role="tablist" aria-label="Sign up or log in">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === "login"}
-                  className={`auth-tab ${mode === "login" ? "active" : ""}`}
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                  }}
-                >
-                  Log In
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === "signup"}
-                  className={`auth-tab ${mode === "signup" ? "active" : ""}`}
-                  onClick={() => {
-                    setMode("signup");
-                    setError("");
-                  }}
-                >
-                  Sign Up
-                </button>
-              </div>
+          <div className="auth-tabs" role="tablist" aria-label="Sign up or log in">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "login"}
+              className={`auth-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => {
+                setMode("login");
+                setError("");
+              }}
+            >
+              Log In
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "signup"}
+              className={`auth-tab ${mode === "signup" ? "active" : ""}`}
+              onClick={() => {
+                setMode("signup");
+                setError("");
+              }}
+            >
+              Sign Up
+            </button>
+          </div>
 
-              <h2 id="auth-form-title">
-                {mode === "login" ? "Welcome back" : "Create your account"}
-              </h2>
-              {mode === "signup" && (
-                <p className="auth-panel-sub">
-                  Choose a username, email address, password, and primary orientation goal.
-                </p>
-              )}
-
-              <form onSubmit={handleCredentialSubmit} className="auth-form-fields" noValidate>
-                <div className="auth-input-group">
-                  <label htmlFor="auth-username">Username</label>
-                  <input
-                    id="auth-username"
-                    type="text"
-                    placeholder="e.g., chigo_kigali"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    autoComplete="username"
-                    required
-                  />
-                </div>
-
-                <div className="auth-input-group">
-                  <label htmlFor="auth-email">Email address</label>
-                  <input
-                    id="auth-email"
-                    type="email"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-
-                <div className="auth-input-group">
-                  <label htmlFor="auth-password">Password</label>
-                  <div className="password-input-wrap">
-                    <input
-                      id="auth-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="password-eye-btn"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword((prev) => !prev)}
-                    >
-                      <EyeIcon visible={showPassword} />
-                    </button>
-                  </div>
-                </div>
-
-                {mode === "signup" && (
-                  <div className="auth-input-group">
-                    <label htmlFor="auth-goal">Orientation Goal</label>
-                    <select
-                      id="auth-goal"
-                      value={goal}
-                      onChange={(e) => setGoal(e.target.value)}
-                    >
-                      {GOALS.map((g) => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {error && (
-                  <p className="auth-error" role="alert">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="btn-pill btn-pill-yellow btn-pill-lg btn-full"
-                >
-                  {mode === "login" ? "Log In" : "Sign Up"}
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <p className="auth-tag">/ VERIFICATION REQUIRED</p>
-              <h2 id="auth-form-title">Enter verification code</h2>
-              <p className="auth-panel-sub">
-                Credentials confirmed for <strong>{pendingAuth.email}</strong>. Enter your 6-digit code below.
-              </p>
-
-              <div className="verify-code-box" role="status">
-                <span>Local Demo Code:</span>
-                <strong>{pendingAuth.code}</strong>
-              </div>
-
-              <form onSubmit={handleVerifyCode} className="auth-form-fields" noValidate>
-                <div className="auth-input-group">
-                  <label htmlFor="auth-otp">6-Digit Verification Code</label>
-                  <input
-                    id="auth-otp"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={codeInput}
-                    onChange={(e) => setCodeInput(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {error && (
-                  <p className="auth-error" role="alert">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="btn-pill btn-pill-yellow btn-pill-lg btn-full"
-                >
-                  {pendingAuth.mode === "signup"
-                    ? "Verify & Create Account"
-                    : "Verify & Log In"}
-                </button>
-
-                <div className="verify-secondary-actions">
-                  <button
-                    type="button"
-                    className="btn-pill btn-pill-ghost btn-pill-sm"
-                    onClick={handleResendCode}
-                  >
-                    Resend Code
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-pill btn-pill-ghost btn-pill-sm"
-                    onClick={() => {
-                      cancelPendingAuth();
-                      setError("");
-                    }}
-                  >
-                    Change Details
-                  </button>
-                </div>
-              </form>
-            </>
+          <h2 id="auth-form-title">
+            {mode === "login" ? "Welcome back" : "Create your account"}
+          </h2>
+          {mode === "signup" && (
+            <p className="auth-panel-sub">
+              Choose a username, email address, password, and primary orientation goal.
+            </p>
           )}
+
+          <form onSubmit={handleSubmit} className="auth-form-fields" noValidate>
+            <div className="auth-input-group">
+              <label htmlFor="auth-username">Username</label>
+              <input
+                id="auth-username"
+                type="text"
+                placeholder="e.g., chigo_kigali"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </div>
+
+            <div className="auth-input-group">
+              <label htmlFor="auth-email">Email address</label>
+              <input
+                id="auth-email"
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div className="auth-input-group">
+              <label htmlFor="auth-password">Password</label>
+              <div className="password-input-wrap">
+                <input
+                  id="auth-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-eye-btn"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  <EyeIcon visible={showPassword} />
+                </button>
+              </div>
+            </div>
+
+            {mode === "signup" && (
+              <div className="auth-input-group">
+                <label htmlFor="auth-goal">Orientation Goal</label>
+                <select
+                  id="auth-goal"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                >
+                  {GOALS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="btn-pill btn-pill-yellow btn-pill-lg btn-full"
+            >
+              {mode === "login" ? "Log In" : "Sign Up"}
+            </button>
+          </form>
         </section>
       </div>
     </main>

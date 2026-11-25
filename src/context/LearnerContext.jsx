@@ -63,10 +63,6 @@ function createDefaultProfile(username, email, password, goal) {
   };
 }
 
-function generateSixDigitCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 const LearnerContext = createContext(null);
 
 export function LearnerProvider({ children }) {
@@ -86,8 +82,6 @@ export function LearnerProvider({ children }) {
       return "";
     }
   });
-
-  const [pendingAuth, setPendingAuth] = useState(null);
 
   useEffect(() => {
     try {
@@ -128,66 +122,67 @@ export function LearnerProvider({ children }) {
         modules: INITIAL_MODULES,
       };
 
-  const requestVerificationCode = ({ mode, username, email, password, goal }) => {
+  const signUp = ({ username, email, password, goal }) => {
     const cleanUser = (username || "").trim();
     const cleanEmail = (email || "").trim().toLowerCase();
 
-    if (mode === "signup") {
-      if (!cleanUser || !cleanEmail || !password) {
-        return {
-          ok: false,
-          error: "Please enter your username, email address, and password.",
-        };
-      }
-      if (!USERNAME_REGEX.test(cleanUser)) {
-        return {
-          ok: false,
-          error:
-            "Username must be 3–24 characters using letters, numbers, '.', '_', or '-'.",
-        };
-      }
-      if (!EMAIL_REGEX.test(cleanEmail)) {
-        return {
-          ok: false,
-          error: "Please enter a valid email address (e.g., name@example.com).",
-        };
-      }
-      if (!PASSWORD_REGEX.test(password)) {
-        return {
-          ok: false,
-          error:
-            "Password must be at least 6 characters and include at least 1 letter and 1 number.",
-        };
-      }
-      if (accounts[cleanUser]) {
-        return {
-          ok: false,
-          error: "That username already exists. Try logging in instead.",
-        };
-      }
-      const emailTaken = Object.values(accounts).some(
-        (acc) => (acc.email || "").toLowerCase() === cleanEmail
-      );
-      if (emailTaken) {
-        return {
-          ok: false,
-          error: "An account with that email address already exists.",
-        };
-      }
-
-      const code = generateSixDigitCode();
-      setPendingAuth({
-        mode: "signup",
-        username: cleanUser,
-        email: cleanEmail,
-        password,
-        goal: goal || "Smooth campus & social adjustment",
-        code,
-      });
-      return { ok: true, code };
+    if (!cleanUser || !cleanEmail || !password) {
+      return {
+        ok: false,
+        error: "Please enter your username, email address, and password.",
+      };
+    }
+    if (!USERNAME_REGEX.test(cleanUser)) {
+      return {
+        ok: false,
+        error:
+          "Username must be 3–24 characters using letters, numbers, '.', '_', or '-'.",
+      };
+    }
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      return {
+        ok: false,
+        error: "Please enter a valid email address (e.g., name@example.com).",
+      };
+    }
+    if (!PASSWORD_REGEX.test(password)) {
+      return {
+        ok: false,
+        error:
+          "Password must be at least 6 characters and include at least 1 letter and 1 number.",
+      };
+    }
+    if (accounts[cleanUser]) {
+      return {
+        ok: false,
+        error: "That username already exists. Try logging in instead.",
+      };
+    }
+    const emailTaken = Object.values(accounts).some(
+      (acc) => (acc.email || "").toLowerCase() === cleanEmail
+    );
+    if (emailTaken) {
+      return {
+        ok: false,
+        error: "An account with that email address already exists.",
+      };
     }
 
-    // Login mode
+    const newProfile = createDefaultProfile(
+      cleanUser,
+      cleanEmail,
+      password,
+      goal
+    );
+    setAccounts((prev) => ({ ...prev, [cleanUser]: newProfile }));
+    setActiveUsername(cleanUser);
+    return { ok: true };
+  };
+
+  const signIn = ({ username, email, password }) => {
+    const cleanUser = (username || "").trim();
+    const cleanEmail = (email || "").trim().toLowerCase();
+
     if (!password || (!cleanUser && !cleanEmail)) {
       return {
         ok: false,
@@ -243,52 +238,8 @@ export function LearnerProvider({ children }) {
       }
     }
 
-    const code = generateSixDigitCode();
-    setPendingAuth({
-      mode: "login",
-      username: matchedEntry.username,
-      email: matchedEntry.email || cleanEmail,
-      password: matchedEntry.password,
-      goal: matchedEntry.goal,
-      code,
-    });
-    return { ok: true, code };
-  };
-
-  const verifyAndCompleteAuth = (submittedCode) => {
-    const cleanCode = (submittedCode || "").trim();
-    if (!pendingAuth) {
-      return {
-        ok: false,
-        error: "No verification request active. Request a code first.",
-      };
-    }
-    if (!/^\d{6}$/.test(cleanCode) || cleanCode !== pendingAuth.code) {
-      return {
-        ok: false,
-        error: "Please enter the matching 6-digit verification code.",
-      };
-    }
-
-    if (pendingAuth.mode === "signup") {
-      const newProfile = createDefaultProfile(
-        pendingAuth.username,
-        pendingAuth.email,
-        pendingAuth.password,
-        pendingAuth.goal
-      );
-      setAccounts((prev) => ({ ...prev, [pendingAuth.username]: newProfile }));
-      setActiveUsername(pendingAuth.username);
-    } else {
-      setActiveUsername(pendingAuth.username);
-    }
-
-    setPendingAuth(null);
+    setActiveUsername(matchedEntry.username);
     return { ok: true };
-  };
-
-  const cancelPendingAuth = () => {
-    setPendingAuth(null);
   };
 
   const signOut = () => {
@@ -365,10 +316,8 @@ export function LearnerProvider({ children }) {
     <LearnerContext.Provider
       value={{
         learner,
-        pendingAuth,
-        requestVerificationCode,
-        verifyAndCompleteAuth,
-        cancelPendingAuth,
+        signUp,
+        signIn,
         signOut,
         resetProgress,
         setLastVisitedRoute,

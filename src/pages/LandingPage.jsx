@@ -7,7 +7,7 @@ export default function LandingPage() {
   const { learner } = useLearner();
   const [orbTick, setOrbTick] = useState(0);
 
-return (
+  return (
     <main className="landing-stage">
       <div className="ambient-glow ambient-glow--blue" aria-hidden="true" />
       <div className="ambient-glow ambient-glow--green" aria-hidden="true" />
@@ -26,12 +26,6 @@ return (
               tiltDeg={orbTick * 18 - 8}
             />
           </button>
-          <Link
-            to={learner.isAuthenticated ? "/dashboard" : "/login"}
-            className="floating-action-badge"
-          >
-            {learner.isAuthenticated ? "Dashboard" : "Start here"}
-          </Link>
         </div>
 
         <p className="landing-kicker">/ RWANDA STUDENT ORIENTATION</p>

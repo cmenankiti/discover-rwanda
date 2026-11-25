@@ -25,7 +25,6 @@ export default function ModuleViewPage() {
   const [practicedIds, setPracticedIds] = useState([]);
   const [historyUnlocked, setHistoryUnlocked] = useState(false);
   const [answers, setAnswers] = useState({});
-  const [voices, setVoices] = useState([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -48,7 +47,6 @@ export default function ModuleViewPage() {
 
     const loadVoices = () => {
       const filteredVoices = getFilteredFallbackVoices();
-      setVoices(filteredVoices);
 
       if (filteredVoices.length > 0) {
         setSelectedVoiceURI((prev) =>
@@ -157,27 +155,7 @@ export default function ModuleViewPage() {
                   className="auth-input-group"
                   style={{ maxWidth: "340px", marginBottom: "1.1rem" }}
                 >
-                  <label htmlFor="voice-select">
-                    Fallback Pronunciation Voice (RW / SW / RN / FR)
-                  </label>
-                  {voices.length > 0 ? (
-                    <select
-                      id="voice-select"
-                      value={selectedVoiceURI}
-                      onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                    >
-                      {voices.map((v) => (
-                        <option key={v.voiceURI} value={v.voiceURI}>
-                          {v.name} ({v.lang})
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="phrase-note">
-                      No Kinyarwanda, Swahili, Rundi, or French browser voices
-                      installed—using local clips and Pindo audio.
-                    </p>
-                  )}
+                  <span className="phrase-note">Fallback Pronunciation</span>
                 </div>
 
                 <div
